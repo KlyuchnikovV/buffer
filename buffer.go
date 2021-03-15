@@ -4,7 +4,6 @@ import (
 	"log"
 
 	"github.com/KlyuchnikovV/buffer/line"
-	"github.com/KlyuchnikovV/edigode-buffer/runes"
 )
 
 type Buffer struct {
@@ -14,12 +13,12 @@ type Buffer struct {
 	column int
 }
 
-func New(data []line.Line) (*Buffer, error) {
+func New(lines []line.Line) (*Buffer, error) {
 	var buffer = Buffer{
 		BufferTree: BufferTree{},
 	}
 
-	for i, item := range runes.Split(data, '\n') {
+	for i, item := range lines {
 		if err := buffer.Insert(item, i); err != nil {
 			return nil, err
 		}
