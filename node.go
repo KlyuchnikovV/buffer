@@ -1,28 +1,30 @@
-package seqtree
+package buffer
 
 import (
 	"fmt"
 	"math"
 	"strings"
+
+	"github.com/KlyuchnikovV/buffer/line"
 )
 
 type Node struct {
-	data                  interface{}
+	data                  *line.Line
 	numberOfChildren      int
 	leftChild, rightChild *Node
 }
 
-func newNode(data interface{}) *Node {
+func newNode(data line.Line) *Node {
 	return &Node{
-		data: data,
+		data: &data,
 	}
 }
 
-func (n *Node) SetData(data interface{}) {
+func (n *Node) SetData(data *line.Line) {
 	n.data = data
 }
 
-func (n Node) Data() interface{} {
+func (n Node) Data() *line.Line {
 	return n.data
 }
 
@@ -137,8 +139,8 @@ func (n *Node) balance() {
 	}
 }
 
-func (n Node) toList() []interface{} {
-	var result = make([]interface{}, 0, n.numberOfChildren+1)
+func (n Node) toList() []*line.Line {
+	var result = make([]*line.Line, 0, n.numberOfChildren+1)
 
 	if n.leftChild != nil {
 		result = n.leftChild.toList()

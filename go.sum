@@ -1,3 +1,7 @@
+github.com/KlyuchnikovV/edigode-buffer v0.0.0-20210306185046-d8d1ac40606c h1:U0mb9itW0Re9YkwyNk01WDwB0ZHIb65CV4taLIfwDTI=
+github.com/KlyuchnikovV/edigode-cli v0.0.0-20210312083048-182a4dcf2cf0 h1:Ca5Qd2Qeu8ZwoHW0Eawaqh5SYsDD4tXpgIBT13/i4g0=
+github.com/KlyuchnikovV/seqtree v0.0.0-20210306185046-d8d1ac40606c h1:EgN5Aq4ywozvUuF08eGcWG1nRyjGt1arIvfbOmiirjg=
+github.com/KlyuchnikovV/seqtree v0.0.0-20210306185046-d8d1ac40606c/go.mod h1:/Yo2n5mVBJAIM8LiZHERVVwXptzUmTXynGRDBeLUwIw=
 github.com/KlyuchnikovV/stack v0.0.0-20200325201546-1b37f0875e01 h1:lQ/xZBiIvGmWGUVqIqf36NNAG0D+8OAXlfyjfPE9FG0=
 github.com/KlyuchnikovV/stack v0.0.0-20200325201546-1b37f0875e01/go.mod h1:/lVt2XeS0PAXniX9UqL19jDky4u1FlouhWxBHrivP6o=
 github.com/davecgh/go-spew v1.1.0 h1:ZDRjVQ15GmhC3fiQ8ni8+OwkZQO4DARzQgrnXU1Liz8=

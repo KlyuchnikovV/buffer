@@ -1,30 +1,31 @@
-package seqtree
+package buffer
 
 import (
 	"fmt"
 
+	"github.com/KlyuchnikovV/buffer/line"
 	"github.com/KlyuchnikovV/stack"
 )
 
-type SequentialAVLTree struct {
+type BufferTree struct {
 	root *Node
 	size int
 }
 
-func New(data interface{}) *SequentialAVLTree {
-	return &SequentialAVLTree{
+func NewTree(data line.Line) *BufferTree {
+	return &BufferTree{
 		root: newNode(data),
 		size: 1,
 	}
 }
 
-func (tree *SequentialAVLTree) Insert(data interface{}, position int) error {
+func (tree *BufferTree) Insert(data line.Line, position int) error {
 	if position > tree.size || position < 0 {
 		return fmt.Errorf("position \"%d\" is out of tree range: [%d - %d]", position, 0, tree.size+1)
 	}
 	tree.size++
 	if tree.root == nil {
-		tree.root = &Node{data: data}
+		tree.root = newNode(data)
 		return nil
 	}
 
@@ -45,10 +46,10 @@ loop:
 			node = node.rightChild
 			currentPosition = node.getPosition(currentPosition, false)
 		case currentPosition >= position && !node.HasLeft():
-			node.leftChild = &Node{data: data}
+			node.leftChild = newNode(data)
 			break loop
 		case currentPosition < position && !node.HasRight():
-			node.rightChild = &Node{data: data}
+			node.rightChild = newNode(data)
 			break loop
 		}
 	}
@@ -60,7 +61,7 @@ loop:
 	return nil
 }
 
-func (tree *SequentialAVLTree) GetNode(position int) *Node {
+func (tree *BufferTree) GetNode(position int) *Node {
 	if tree.size == 0 || position < 0 || position > tree.size {
 		return nil
 	}
@@ -83,7 +84,7 @@ func (tree *SequentialAVLTree) GetNode(position int) *Node {
 	return node
 }
 
-func (tree *SequentialAVLTree) Find(position int) (interface{}, bool) {
+func (tree *BufferTree) Find(position int) (*line.Line, bool) {
 	node := tree.GetNode(position)
 	if node == nil {
 		return nil, false
@@ -91,15 +92,15 @@ func (tree *SequentialAVLTree) Find(position int) (interface{}, bool) {
 	return node.Data(), true
 }
 
-func (tree *SequentialAVLTree) Size() int {
+func (tree *BufferTree) Size() int {
 	return tree.size
 }
 
-func (tree *SequentialAVLTree) ToList() []interface{} {
+func (tree *BufferTree) ToList() []*line.Line {
 	return tree.root.toList()
 }
 
-func (tree *SequentialAVLTree) Delete(position int) (interface{}, bool) {
+func (tree *BufferTree) Delete(position int) (*line.Line, bool) {
 	if position >= tree.size || position < 0 {
 		return nil, false
 	}
@@ -164,7 +165,7 @@ func (tree *SequentialAVLTree) Delete(position int) (interface{}, bool) {
 	return result, true
 }
 
-func (tree *SequentialAVLTree) Visualize() {
+func (tree *BufferTree) Visualize() {
 	if tree.root == nil {
 		return
 	}
