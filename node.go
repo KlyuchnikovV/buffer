@@ -1,62 +1,48 @@
 package buffer
 
 import (
-	"fmt"
 	"math"
-	"strings"
-
-	"github.com/KlyuchnikovV/buffer/line"
 )
 
-type Node struct {
-	data                  *line.Line
+type Line struct {
+	data                  []rune
 	numberOfChildren      int
-	leftChild, rightChild *Node
+	leftChild, rightChild *Line
 }
 
-func newNode(data line.Line) *Node {
-	return &Node{
-		data: &data,
-	}
+func newNode() *Line {
+	return &Line{}
 }
 
-func (n *Node) SetData(data *line.Line) {
-	n.data = data
-}
-
-func (n Node) Data() *line.Line {
-	return n.data
-}
-
-func (n Node) LeftChild() *Node {
+func (n Line) LeftChild() *Line {
 	return n.leftChild
 }
 
-func (n Node) RightChild() *Node {
+func (n Line) RightChild() *Line {
 	return n.rightChild
 }
 
-func (n Node) HasLeft() bool {
+func (n Line) HasLeft() bool {
 	return n.leftChild != nil
 }
 
-func (n Node) HasRight() bool {
+func (n Line) HasRight() bool {
 	return n.rightChild != nil
 }
 
-func (n *Node) IsLeftOf(parent Node) bool {
+func (n *Line) IsLeftOf(parent Line) bool {
 	return parent.leftChild == n
 }
 
-func (n *Node) IsRightOf(parent Node) bool {
+func (n *Line) IsRightOf(parent Line) bool {
 	return parent.rightChild == n
 }
 
-func (n Node) IsLeaf() bool {
+func (n Line) IsLeaf() bool {
 	return n.leftChild == nil && n.rightChild == nil
 }
 
-func (n Node) getPosition(prevPosition int, goingLeft bool) int {
+func (n Line) getPosition(prevPosition int, goingLeft bool) int {
 	if goingLeft {
 		if n.rightChild != nil {
 			return prevPosition - n.rightChild.numberOfChildren - 2
@@ -69,11 +55,11 @@ func (n Node) getPosition(prevPosition int, goingLeft bool) int {
 	return prevPosition + 1
 }
 
-func (n Node) height() int {
+func (n Line) height() int {
 	return 1 + log2(n.numberOfChildren+1)
 }
 
-func (n Node) getBalance() int {
+func (n Line) getBalance() int {
 	result := 0
 	if n.leftChild != nil {
 		result -= n.leftChild.height()
@@ -84,7 +70,7 @@ func (n Node) getBalance() int {
 	return result
 }
 
-func (n *Node) rotateRight() {
+func (n *Line) rotateRight() {
 	if n.leftChild == nil {
 		return
 	}
@@ -98,7 +84,7 @@ func (n *Node) rotateRight() {
 	n.fixNumberOfChildren()
 }
 
-func (n *Node) rotateLeft() {
+func (n *Line) rotateLeft() {
 	if n.rightChild == nil {
 		return
 	}
@@ -112,7 +98,7 @@ func (n *Node) rotateLeft() {
 	n.fixNumberOfChildren()
 }
 
-func (n *Node) fixNumberOfChildren() {
+func (n *Line) fixNumberOfChildren() {
 	if n.leftChild == nil {
 		(*n).numberOfChildren = 0
 	} else {
@@ -124,7 +110,7 @@ func (n *Node) fixNumberOfChildren() {
 	}
 }
 
-func (n *Node) balance() {
+func (n *Line) balance() {
 	switch n.getBalance() {
 	case 2:
 		if n.rightChild.getBalance() < 0 {
@@ -139,29 +125,17 @@ func (n *Node) balance() {
 	}
 }
 
-func (n Node) toList() []*line.Line {
-	var result = make([]*line.Line, 0, n.numberOfChildren+1)
+func (n *Line) toList() []*Line {
+	var result = make([]*Line, 0, n.numberOfChildren+1)
 
 	if n.leftChild != nil {
 		result = n.leftChild.toList()
 	}
-	result = append(result, n.data)
+	result = append(result, n)
 	if n.rightChild != nil {
 		result = append(result, n.rightChild.toList()...)
 	}
 	return result
-}
-
-func (n Node) visualizeNodeSubtree(currentLevel, treeHeight int) {
-	if n.leftChild != nil {
-		n.leftChild.visualizeNodeSubtree(currentLevel+1, treeHeight)
-	}
-
-	fmt.Printf("%s%#v%s\n", strings.Repeat("  ", currentLevel), n.data, strings.Repeat("--", treeHeight-currentLevel))
-
-	if n.rightChild != nil {
-		n.rightChild.visualizeNodeSubtree(currentLevel+1, treeHeight)
-	}
 }
 
 func log2(n int) int {
