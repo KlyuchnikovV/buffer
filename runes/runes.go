@@ -61,3 +61,12 @@ func ReplaceAll(runes []rune, original, new []rune) []rune {
 	}
 	return result
 }
+
+func Equal(first, second []rune) bool {
+	for i, ch := range first {
+		if second[i] != ch {
+			return false
+		}
+	}
+	return true
+}
