@@ -11,6 +11,8 @@ import (
 )
 
 type Buffer struct {
+	Name string
+
 	BufferTree
 
 	line   int
@@ -19,8 +21,9 @@ type Buffer struct {
 	Events broadcast.Broadcast
 }
 
-func New(lines []rune) (*Buffer, error) {
+func New(name string, lines []rune) (*Buffer, error) {
 	var buffer = Buffer{
+		Name:       name,
 		BufferTree: BufferTree{},
 		Events:     *broadcast.New(context.Background()),
 	}
@@ -220,7 +223,7 @@ func (buffer *Buffer) FindNext(prevLine, prevColumn int, runes []rune) (int, int
 	return -0, -1
 }
 
-func (buffer *Buffer) String() string {
+func (buffer Buffer) String() string {
 	var (
 		lines  = buffer.ToList()
 		result = make([][]rune, len(lines))
@@ -229,10 +232,11 @@ func (buffer *Buffer) String() string {
 		result[i] = (*line).Data()
 	}
 
-	return string(runes.Join(result, ' '))
+	return string(runes.Join(result, '\n'))
 }
 
 func (buffer *Buffer) ProcessRune(r rune) error {
+	log.Printf("PROCESS_RUNE: name %s", buffer.Name)
 	var (
 		err error
 	)
@@ -249,6 +253,7 @@ func (buffer *Buffer) ProcessRune(r rune) error {
 }
 
 func (buffer *Buffer) ProcessEscape(sequence []rune) error {
+	log.Printf("PROCESS_ESCAPE: name %s", buffer.Name)
 	defer func() {
 		line, column := buffer.Cursor()
 		buffer.SendCursor(line, column)
@@ -268,7 +273,8 @@ func (buffer *Buffer) ProcessEscape(sequence []rune) error {
 
 func (buffer *Buffer) SendLineChanged(line int) {
 	buffer.Events.Receiver <- types.BufferChangeMessage{
-		Line: line,
+		Buffer: buffer.Name,
+		Line:   line,
 	}
 }
 
@@ -282,6 +288,7 @@ func (buffer *Buffer) SendLineChanged(line int) {
 
 func (buffer *Buffer) SendCursor(line, column int) {
 	buffer.Events.Receiver <- types.CursorReposition{
+		Buffer: buffer.Name,
 		Line:   line,
 		Column: column,
 	}
