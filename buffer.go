@@ -28,10 +28,6 @@ func New(name string, lines []rune) (*Buffer, error) {
 		Events:     *broadcast.New(context.Background()),
 	}
 
-	defer func() {
-		buffer.SendLineChanged(-1)
-	}()
-
 	for i, item := range runes.Split(lines, '\n') {
 		if err := buffer.Insert(item, i); err != nil {
 			return nil, err
@@ -110,7 +106,6 @@ func (buffer *Buffer) CursorRight() {
 	if buffer.line == buffer.Size()-1 {
 		return
 	}
-	log.Printf("BUFFER: cursor down")
 	buffer.CursorDown()
 	buffer.column = 0
 }
@@ -121,14 +116,10 @@ func (buffer *Buffer) InsertRune(r rune) {
 		return
 	}
 	defer func() {
-		// for i := buffer.line; i < buffer.size; i++ {
 		buffer.SendLineChanged(buffer.line)
-		// }
 	}()
 
 	buffer.CurrentLine().Insert(r, buffer.column)
-	// buffer.column++
-	// buffer.CursorRight()
 }
 
 func (buffer *Buffer) DeleteRune() {
@@ -137,13 +128,9 @@ func (buffer *Buffer) DeleteRune() {
 		return
 	}
 	defer func() {
-		// for i := buffer.line; i < buffer.size; i++ {
 		buffer.SendLineChanged(buffer.line)
-		// }
 	}()
-	// buffer.column--
 	buffer.CursorLeft()
-	log.Printf("DELETE: column is %d", buffer.column)
 	buffer.CurrentLine().Remove(buffer.column)
 }
 
@@ -165,8 +152,7 @@ func (buffer *Buffer) NewLine() {
 	buffer.line++
 
 	if err := buffer.Insert(temp[buffer.column:], buffer.line); err != nil {
-		log.Print(err)
-		panic(err)
+		log.Panic(err)
 	}
 
 	buffer.column = 0
@@ -236,7 +222,6 @@ func (buffer Buffer) String() string {
 }
 
 func (buffer *Buffer) ProcessRune(r rune) error {
-	log.Printf("PROCESS_RUNE: name %s", buffer.Name)
 	var (
 		err error
 	)
@@ -253,7 +238,6 @@ func (buffer *Buffer) ProcessRune(r rune) error {
 }
 
 func (buffer *Buffer) ProcessEscape(sequence []rune) error {
-	log.Printf("PROCESS_ESCAPE: name %s", buffer.Name)
 	defer func() {
 		line, column := buffer.Cursor()
 		buffer.SendCursor(line, column)
@@ -277,14 +261,6 @@ func (buffer *Buffer) SendLineChanged(line int) {
 		Line:   line,
 	}
 }
-
-// func (buffer *Buffer) SendRender(line, column int, runes ...rune) {
-// 	buffer.Events <- types.RenderMessage{
-// 		Line:   line,
-// 		Column: column,
-// 		Runes:  runes,
-// 	}
-// }
 
 func (buffer *Buffer) SendCursor(line, column int) {
 	buffer.Events.Receiver <- types.CursorReposition{

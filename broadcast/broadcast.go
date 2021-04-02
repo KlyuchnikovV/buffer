@@ -2,7 +2,6 @@ package broadcast
 
 import (
 	"context"
-	"log"
 
 	"github.com/KlyuchnikovV/edigode-cli/types"
 )
@@ -39,7 +38,6 @@ func (b *Broadcast) Start() error {
 			if !ok {
 				panic("err")
 			}
-			log.Printf("BROADCAST: casting msg %v", msg)
 			for _, listener := range b.listeners {
 				go listener(msg)
 			}
