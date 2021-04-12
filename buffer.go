@@ -5,9 +5,9 @@ import (
 	"log"
 
 	"github.com/KlyuchnikovV/buffer/broadcast"
+	"github.com/KlyuchnikovV/buffer/messages"
 	"github.com/KlyuchnikovV/buffer/runes"
 	"github.com/KlyuchnikovV/edigode-cli/constants"
-	"github.com/KlyuchnikovV/edigode-cli/types"
 )
 
 type Buffer struct {
@@ -48,8 +48,12 @@ func (buffer *Buffer) GetLinesData(line, number int) [][]rune {
 	return result
 }
 
-func (buffer *Buffer) Cursor() (int, int) {
-	return buffer.line, buffer.column
+func (buffer *Buffer) Line() int {
+	return buffer.line
+}
+
+func (buffer *Buffer) Column() int {
+	return buffer.column
 }
 
 func (buffer *Buffer) CursorUp() {
@@ -140,9 +144,7 @@ func (buffer *Buffer) NewLine() {
 		temp = make([]rune, line.Length())
 	)
 	defer func() {
-		for i := buffer.line - 1; i < buffer.size; i++ {
-			buffer.SendLineChanged(i)
-		}
+		buffer.SendLineChanged(-1)
 	}()
 
 	copy(temp, line.data)
@@ -163,9 +165,7 @@ func (buffer *Buffer) DeleteNewLine() {
 		return
 	}
 	defer func() {
-		for i := buffer.line; i < buffer.size; i++ {
-			buffer.SendLineChanged(i)
-		}
+		buffer.SendLineChanged(-1)
 	}()
 
 	line, _ := buffer.Delete(buffer.line)
@@ -222,6 +222,10 @@ func (buffer Buffer) String() string {
 }
 
 func (buffer *Buffer) ProcessRune(r rune) error {
+	defer func() {
+		line, column := buffer.line, buffer.column
+		buffer.SendCursor(line, column)
+	}()
 	var (
 		err error
 	)
@@ -239,7 +243,7 @@ func (buffer *Buffer) ProcessRune(r rune) error {
 
 func (buffer *Buffer) ProcessEscape(sequence []rune) error {
 	defer func() {
-		line, column := buffer.Cursor()
+		line, column := buffer.line, buffer.column
 		buffer.SendCursor(line, column)
 	}()
 	switch {
@@ -256,16 +260,16 @@ func (buffer *Buffer) ProcessEscape(sequence []rune) error {
 }
 
 func (buffer *Buffer) SendLineChanged(line int) {
-	buffer.Events.Receiver <- types.BufferChangeMessage{
-		Buffer: buffer.Name,
-		Line:   line,
+	buffer.Events.Receiver <- messages.BufferChange{
+		Source: buffer.Name,
+		Row:    line,
 	}
 }
 
 func (buffer *Buffer) SendCursor(line, column int) {
-	buffer.Events.Receiver <- types.CursorReposition{
-		Buffer: buffer.Name,
-		Line:   line,
+	buffer.Events.Receiver <- messages.CursorReposition{
+		Source: buffer.Name,
+		Row:    line,
 		Column: column,
 	}
 }

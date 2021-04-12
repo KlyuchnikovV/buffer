@@ -3,27 +3,27 @@ package broadcast
 import (
 	"context"
 
-	"github.com/KlyuchnikovV/edigode-cli/types"
+	"github.com/KlyuchnikovV/buffer/messages"
 )
 
 type Broadcast struct {
 	context.Context
 	cancel context.CancelFunc
 
-	Receiver chan types.Message
+	Receiver chan messages.RenderMessage
 
-	listeners []func(types.Message)
+	listeners []func(messages.RenderMessage)
 }
 
 func New(ctx context.Context) *Broadcast {
 	return &Broadcast{
 		Context:   ctx,
-		Receiver:  make(chan types.Message, 1000),
-		listeners: make([]func(types.Message), 0),
+		Receiver:  make(chan messages.RenderMessage, 1000),
+		listeners: make([]func(messages.RenderMessage), 0),
 	}
 }
 
-func (b *Broadcast) AddListener(l func(types.Message)) {
+func (b *Broadcast) AddListener(l func(messages.RenderMessage)) {
 	b.listeners = append(b.listeners, l)
 }
 
