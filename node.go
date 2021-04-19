@@ -10,10 +10,6 @@ type Line struct {
 	leftChild, rightChild *Line
 }
 
-func newNode() *Line {
-	return &Line{}
-}
-
 func (n Line) LeftChild() *Line {
 	return n.leftChild
 }

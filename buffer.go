@@ -18,9 +18,6 @@ type Buffer struct {
 
 	cursor.Cursor
 
-	// line   int
-	// column int
-
 	Events broadcast.Broadcast
 }
 

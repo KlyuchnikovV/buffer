@@ -34,7 +34,7 @@ func (c *Cursor) CursorUp() {
 
 	c.line--
 
-	var lenOfLine = c.getLineWidth(c.line) // c.CurrentLine().Length()
+	var lenOfLine = c.getLineWidth(c.line)
 	if lenOfLine < c.column {
 		c.column = lenOfLine
 	}
@@ -42,13 +42,13 @@ func (c *Cursor) CursorUp() {
 
 func (c *Cursor) CursorDown() {
 	if c.line == c.getHeight()-1 {
-		c.column = c.getLineWidth(c.getHeight() - 1) //line.Length()
+		c.column = c.getLineWidth(c.getHeight() - 1)
 		return
 	}
 
 	c.line++
 
-	var lenOfLine = c.getLineWidth(c.line) //c.CurrentLine().Length()
+	var lenOfLine = c.getLineWidth(c.line)
 	if lenOfLine < c.column {
 		c.column = lenOfLine
 	}
@@ -64,11 +64,11 @@ func (c *Cursor) CursorLeft() {
 		return
 	}
 	c.CursorUp()
-	c.column = c.getLineWidth(c.line) //c.CurrentLine().Length()
+	c.column = c.getLineWidth(c.line)
 }
 
 func (c *Cursor) CursorRight() {
-	if c.column < c.getLineWidth(c.line) { //c.CurrentLine().Length() {
+	if c.column < c.getLineWidth(c.line) {
 		c.column++
 		return
 	}
