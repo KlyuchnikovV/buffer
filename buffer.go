@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/KlyuchnikovV/buffer/broadcast"
+	"github.com/KlyuchnikovV/buffer/cursor"
 	"github.com/KlyuchnikovV/buffer/messages"
 	"github.com/KlyuchnikovV/buffer/runes"
 	"github.com/KlyuchnikovV/edigode-cli/constants"
@@ -15,8 +16,10 @@ type Buffer struct {
 
 	BufferTree
 
-	line   int
-	column int
+	cursor.Cursor
+
+	// line   int
+	// column int
 
 	Events broadcast.Broadcast
 }
@@ -28,6 +31,8 @@ func New(name string, lines []rune) (*Buffer, error) {
 		Events:     *broadcast.New(context.Background()),
 	}
 
+	buffer.Cursor = cursor.New(0, 0, buffer.Size, buffer.getLineWidth)
+
 	for i, item := range runes.Split(lines, '\n') {
 		if err := buffer.Insert(item, i); err != nil {
 			return nil, err
@@ -37,7 +42,18 @@ func New(name string, lines []rune) (*Buffer, error) {
 }
 
 func (buffer *Buffer) CurrentLine() *Line {
-	return buffer.GetNode(buffer.line)
+	return buffer.GetNode(buffer.Line())
+}
+
+func (buffer *Buffer) getLineWidth(line int) int {
+	if line < 0 || line >= buffer.size {
+		log.Panicf("Wrong line parameter to getLineWidth: line: %d, size: %d", line, buffer.size)
+	}
+	node := buffer.GetNode(line)
+	if node == nil {
+		log.Panicf("Node is nil")
+	}
+	return len(node.data)
 }
 
 func (buffer *Buffer) GetLinesData(line, number int) [][]rune {
@@ -48,94 +64,28 @@ func (buffer *Buffer) GetLinesData(line, number int) [][]rune {
 	return result
 }
 
-func (buffer *Buffer) Line() int {
-	return buffer.line
-}
-
-func (buffer *Buffer) Column() int {
-	return buffer.column
-}
-
-func (buffer *Buffer) CursorUp() {
-	if buffer.line == 0 {
-		buffer.column = 0
-		return
-	}
-
-	buffer.line--
-
-	var lenOfLine = buffer.CurrentLine().Length()
-	if lenOfLine < buffer.column {
-		buffer.column = lenOfLine
-	}
-}
-
-func (buffer *Buffer) CursorDown() {
-	line, ok := buffer.Find(buffer.Size() - 1)
-	if !ok {
-		panic("line not found")
-	}
-	if buffer.line == buffer.Size()-1 {
-		buffer.column = line.Length()
-		return
-	}
-
-	buffer.line++
-
-	var lenOfLine = buffer.CurrentLine().Length()
-	if lenOfLine < buffer.column {
-		buffer.column = lenOfLine
-	}
-}
-
-func (buffer *Buffer) CursorLeft() {
-	if buffer.column > 0 {
-		buffer.column--
-		return
-	}
-
-	if buffer.line == 0 {
-		return
-	}
-	buffer.CursorUp()
-	buffer.column = buffer.CurrentLine().Length()
-}
-
-func (buffer *Buffer) CursorRight() {
-	if buffer.column < buffer.CurrentLine().Length() {
-		buffer.column++
-		return
-	}
-
-	if buffer.line == buffer.Size()-1 {
-		return
-	}
-	buffer.CursorDown()
-	buffer.column = 0
-}
-
 func (buffer *Buffer) InsertRune(r rune) {
 	if r == '\n' {
 		buffer.NewLine()
 		return
 	}
 	defer func() {
-		buffer.SendLineChanged(buffer.line)
+		buffer.SendLineChanged(buffer.Line())
 	}()
 
-	buffer.CurrentLine().Insert(r, buffer.column)
+	buffer.CurrentLine().Insert(r, buffer.Column())
 }
 
 func (buffer *Buffer) DeleteRune() {
-	if buffer.column == 0 {
+	if buffer.Column() == 0 {
 		buffer.DeleteNewLine()
 		return
 	}
 	defer func() {
-		buffer.SendLineChanged(buffer.line)
+		buffer.SendLineChanged(buffer.Line())
 	}()
 	buffer.CursorLeft()
-	buffer.CurrentLine().Remove(buffer.column)
+	buffer.CurrentLine().Remove(buffer.Column())
 }
 
 func (buffer *Buffer) NewLine() {
@@ -149,30 +99,28 @@ func (buffer *Buffer) NewLine() {
 
 	copy(temp, line.data)
 
-	line.data = temp[:buffer.column]
+	line.data = temp[:buffer.Column()]
 
-	buffer.line++
-
-	if err := buffer.Insert(temp[buffer.column:], buffer.line); err != nil {
+	if err := buffer.Insert(temp[buffer.Column():], buffer.Line()+1); err != nil {
 		log.Panic(err)
 	}
 
-	buffer.column = 0
+	buffer.CursorRight()
 }
 
 func (buffer *Buffer) DeleteNewLine() {
-	if buffer.line == 0 {
+	if buffer.Line() == 0 {
 		return
 	}
 	defer func() {
 		buffer.SendLineChanged(-1)
 	}()
 
-	line, _ := buffer.Delete(buffer.line)
-	buffer.line--
-	currentLine := buffer.CurrentLine()
-	buffer.column = currentLine.Length()
+	line, _ := buffer.Delete(buffer.Line())
 
+	buffer.CursorLeft()
+
+	currentLine := buffer.CurrentLine()
 	currentLine.AppendData(line, currentLine.Length())
 }
 
@@ -223,8 +171,7 @@ func (buffer Buffer) String() string {
 
 func (buffer *Buffer) ProcessRune(r rune) error {
 	defer func() {
-		line, column := buffer.line, buffer.column
-		buffer.SendCursor(line, column)
+		buffer.SendCursor(buffer.Line(), buffer.Column())
 	}()
 	var (
 		err error
@@ -243,8 +190,7 @@ func (buffer *Buffer) ProcessRune(r rune) error {
 
 func (buffer *Buffer) ProcessEscape(sequence []rune) error {
 	defer func() {
-		line, column := buffer.line, buffer.column
-		buffer.SendCursor(line, column)
+		buffer.SendCursor(buffer.Line(), buffer.Column())
 	}()
 	switch {
 	case runes.Equal(constants.ArrowUp, sequence):
