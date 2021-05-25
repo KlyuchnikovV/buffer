@@ -2,68 +2,49 @@ package token
 
 import (
 	"fmt"
-	"strings"
 
-	"github.com/KlyuchnikovV/buffer/runes"
 	"github.com/KlyuchnikovV/stack"
 )
 
-type Text struct {
-	value []Line
+type Line struct {
+	Value []Token
 }
 
-func NewText(input []rune) Text {
-	var (
-		result = Text{
-			value: make([]Line, 0),
-		}
-		parser      = new(SyntaxParser)
-		tokens, err = parser.ParseText(input)
-	)
-	if err != nil {
-		panic(err)
-	}
-	var lineTokens = make([]Token, 0)
-	for _, token := range tokens {
+func (l Line) String() string {
+	return string(l.Data())
+}
 
-		if !strings.ContainsRune(string(token.value), '\n') {
-			lineTokens = append(lineTokens, token)
-			continue
-		}
-
-		token.value = runes.ReplaceAll(token.value, []rune{'\n'}, []rune{})
-		if len(token.value) != 0 {
-			lineTokens = append(lineTokens, token)
-		}
-
-		result.value = append(result.value, Line{
-			value: lineTokens,
-		})
-		lineTokens = make([]Token, 0)
+func (l Line) Data() []rune {
+	var result = make([]rune, 0)
+	for _, token := range l.Value {
+		result = append(result, token.Value...)
 	}
 	return result
 }
 
-type Line struct {
-	value []Token
+func (l Line) debugString() string {
+	var result string
+	for _, token := range l.Value {
+		result += fmt.Sprintf("<%s[%s]>", string(token.Value), token.Classes)
+	}
+	return result
 }
 
-func (l Line) String() string {
-	var result string
-	for _, token := range l.value {
-		result += fmt.Sprintf("<%s[%s]>", string(token.value), token.classes)
+func (l Line) Length() int {
+	var result int
+	for _, token := range l.Value {
+		result += len(token.Value)
 	}
 	return result
 }
 
 func NewLine(tokens []Token) Line {
 	return Line{
-		value: tokens,
+		Value: tokens,
 	}
 }
 
 type SyntaxParser struct {
-	contextStack *stack.Stack
 }
 
 func (p *SyntaxParser) ParseText(text []rune) ([]Token, error) {
@@ -71,82 +52,146 @@ func (p *SyntaxParser) ParseText(text []rune) ([]Token, error) {
 	if err != nil {
 		return nil, err
 	}
-	p.contextStack = stack.New(5)
-	return p.ProcessTokens(tokens)
+
+	st := stack.New(5)
+	return p.ProcessTokens(tokens, *st)
 }
 
-func (p *SyntaxParser) ProcessTokens(tokens []Token) ([]Token, error) {
-	var (
-		pushedInlineElements int
-		contextIsLinear      = true
-	)
-
+func (p *SyntaxParser) ProcessTokens(tokens []Token, context stack.Stack) ([]Token, error) {
+	var immutableContextPart = context.Size()
 	for i := 0; i < len(tokens); i++ {
-
-		// Если до конца строки нет скобки, то контекст линейный (не пакет)
-
-		switch tokens[i].classes[0] {
-		case openingBrace:
-			if i == 0 {
-				continue
+		switch tokens[i].Classes[0] {
+		case Symbols:
+			switch string(tokens[i].Value) {
+			case "//":
+				context.Push(Class(Comment))
+				to := p.FindElementPosition(tokens[i:], "\n")
+				for j := 0; j < to-1; j++ {
+					for _, item := range context.ToSlice() {
+						tokens[i].Classes = append(tokens[i].Classes, item.(Class))
+					}
+					i++
+				}
+				// continue
+			case "package", "func", "var", "import", "for", "switch", "type", "return", "if", "else", "case":
+				tokens[i].Classes = append(tokens[i].Classes, Keyword)
+				context.Push(Class(tokens[i].Value))
+			case "int", "bool", "string", "struct", "interface", "error", "nil":
+				tokens[i].Classes = append(tokens[i].Classes, Type)
+			case "append", "len", "cap", "panic", "go", "defer":
+				tokens[i].Classes = append(tokens[i].Classes, BuiltInFunc)
+				context.Push(Class(tokens[i].Value))
 			}
-			// FIXME: infinite recursion
-			t, err := p.ProcessTokens(tokens[i:])
+		case newLine:
+			if context.Size() > immutableContextPart {
+				context.Pop()
+			}
+		case Quote:
+			context.Push(Class(String))
+			t, err := p.ProcessTokens(p.PairQuote(tokens[i:]), context)
 			if err != nil {
 				return nil, err
 			}
 			for j := range t {
-				tokens[i+j] = t[j]
+				tokens[i] = t[j]
+				i++
 			}
-			i += len(t) - 1
-			contextIsLinear = false
-		case closingBrace:
-			if !contextIsLinear {
-				p.contextStack.PopN(pushedInlineElements)
-				pushedInlineElements = 0
+			context.Pop()
+			continue
+		case OpeningBrace:
+			t, err := p.ProcessTokens(p.PairBrace(tokens[i:]), context)
+			if err != nil {
+				return nil, err
 			}
-			contextIsLinear = true
-			// FIXME: first element must be opening brace
-			if bracesHasSameType(tokens[0], tokens[i]) {
-				return tokens[:i+1], nil
+			for j := range t {
+				tokens[i] = t[j]
+				i++
 			}
-			panic("brace")
-		case symbols:
-			switch string(tokens[i].value) {
-			case "var", "func", "import", "for", "switch":
-				p.contextStack.Push(Class(tokens[i].value))
-				pushedInlineElements++
-			}
-		case delimeter:
-		case newLine:
-			p.contextStack.PopN(pushedInlineElements)
-			pushedInlineElements = 0
-		default:
+			continue
 		}
 
 		// append classes from stack
-		for _, item := range p.contextStack.ToSlice() {
-			tokens[i].classes = append(tokens[i].classes, item.(Class))
+		for _, item := range context.ToSlice() {
+			tokens[i].Classes = append(tokens[i].Classes, item.(Class))
 		}
 	}
 
 	return tokens, nil
 }
 
+func (p *SyntaxParser) FindElementPosition(tokens []Token, value string) int {
+	for i, token := range tokens {
+		if string(token.Value) == value {
+			return i
+		}
+	}
+	return -1
+}
+
+func (p *SyntaxParser) PairBrace(tokens []Token) []Token {
+	var braceStack = stack.New(1)
+	for i, token := range tokens {
+		switch token.Classes[0] {
+		case OpeningBrace:
+			braceStack.Push(token)
+		case ClosingBrace:
+			t, ok := braceStack.Peek()
+			if !ok {
+				panic("brace err")
+			}
+			if bracesHasSameType(t.(Token), token) {
+				braceStack.Pop()
+			}
+		}
+		if braceStack.Size() == 0 {
+			return tokens[:i]
+		}
+	}
+	return nil
+}
+
+func (p *SyntaxParser) PairQuote(tokens []Token) []Token {
+	var quoteStack = stack.New(1)
+	for i, token := range tokens {
+		if token.Classes[0] != Quote {
+			continue
+		}
+		if i == 0 {
+			quoteStack.Push(token)
+			continue
+		}
+
+		t, ok := quoteStack.Peek()
+		if !ok {
+			panic("quote err")
+		}
+		if string(t.(Token).Value) == string(token.Value) {
+			quoteStack.Pop()
+		} else {
+			quoteStack.Push(token)
+		}
+
+		if quoteStack.Size() == 0 {
+			return tokens[:i]
+		}
+	}
+	return nil
+}
+
 func (p *SyntaxParser) Tokenize(text []rune) ([]Token, error) {
 	var (
 		token = Token{
-			classes: []Class{symbols},
+			Classes: []Class{Symbols},
 		}
 		result = make([]Token, 0)
 	)
 	for _, char := range text {
 		var class = defineClass(char)
-		if token.classes[0] == class && class != newLine {
-			token.value = append(token.value, char)
+		if token.Classes[0] == class && class != newLine {
+			token.Value = append(token.Value, char)
 			continue
 		}
-		if len(token.value) > 0 {
+		if len(token.Value) > 0 {
 			result = append(result, token)
 		}
 		token = New([]rune{char}, class)

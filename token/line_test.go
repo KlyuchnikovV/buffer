@@ -28,7 +28,7 @@ func main() {
 	tokenized, err := parser.ParseText([]rune(text))
 	assert.NoError(t, err)
 	for i, token := range tokenized {
-		fmt.Printf("%d - `%s`, classes: %v\n", i+1, strings.ReplaceAll(string(token.value), "\n", "<new-line>"), token.classes)
+		fmt.Printf("%d - `%s`, classes: %v\n", i+1, strings.ReplaceAll(string(token.Value), "\n", "<new-line>"), token.Classes)
 	}
 	t.FailNow()
 }
@@ -48,18 +48,30 @@ import (
 	"fmt"
 )
 
-func init() {
-
+type Editor struct {
+	field int
 }
 
+func init() {
+	// TODO: fallback if file not found etc
+	if b, err := editor.LoadFile(path); err != nil {
+		return nil, err
+	} else {
+		textareas = append(textareas, textarea.New(resizing.NewPercents(1), b))
+	}
+}
+
+// hello variable
+var hello = "Hello, world!"
+
 func main() {
-	fmt.Printf("Hello, world!")
+	fmt.Printf(hello)
 }
 
 	`
-	text := NewText([]rune(input))
-	for i, line := range text.value {
-		fmt.Printf("%d - `%s`\n", i, line)
+	text := NewText("", []rune(input))
+	for i, line := range text.Value {
+		fmt.Printf("%d - `%s`\n", i+1, line.debugString())
 	}
 	t.FailNow()
 }

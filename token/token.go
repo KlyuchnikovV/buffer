@@ -1,34 +1,34 @@
 package token
 
 type Token struct {
-	value   []rune
-	classes Classes
+	Value   []rune
+	Classes Classes
 }
 
 func New(runes []rune, class ...Class) Token {
 	return Token{
-		value:   runes,
-		classes: class,
+		Value:   runes,
+		Classes: class,
 	}
 }
 
 func (token Token) Length() int {
-	return len(token.value)
+	return len(token.Value)
 }
 
 func (token *Token) Insert(position int, runes ...rune) {
-	var temp = make([]rune, len(token.value)+1)
-	copy(temp, token.value)
+	var temp = make([]rune, len(token.Value)+1)
+	copy(temp, token.Value)
 
-	token.value = append(temp[:position], append(runes, temp[position:]...)...)
+	token.Value = append(temp[:position], append(runes, temp[position:]...)...)
 }
 
 func (token *Token) Remove(position int) {
-	if position < 0 || position >= len(token.value) {
+	if position < 0 || position >= len(token.Value) {
 		return
 	}
-	var temp = make([]rune, len(token.value))
-	copy(temp, token.value)
+	var temp = make([]rune, len(token.Value))
+	copy(temp, token.Value)
 
-	token.value = append(temp[:position], temp[position+1:]...)
+	token.Value = append(temp[:position], temp[position+1:]...)
 }

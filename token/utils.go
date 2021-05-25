@@ -19,39 +19,56 @@ func (c Classes) String() string {
 }
 
 const (
-	undefined    = "undefined"
-	delimeter    = "delimeter"
-	symbols      = "symbols"
-	openingBrace = "opening-brace"
-	closingBrace = "closing-brace"
-	quote        = "quote"
+	Undefined    = "undefined"
+	Delimeter    = "delimeter"
+	Symbols      = "symbols"
+	OpeningBrace = "opening-brace"
+	ClosingBrace = "closing-brace"
+	Quote        = "quote"
 	newLine      = "new-line"
+	Keyword      = "keyword"
+	Type         = "built-in-type"
+	BuiltInFunc  = "built-in-func"
+	Comment      = "comment"
+	String       = "string"
+	Whitespace   = "whitespace"
 )
 
 func defineClass(char rune) Class {
 	if char == '\n' {
 		return newLine
 	}
+	if isWhitespace(char) {
+		return Whitespace
+	}
 	if isQuote(char) {
-		return quote
+		return Quote
 	}
 	if isDelimeter(char) {
-		return delimeter
+		return Delimeter
 	}
 	if isOpeningBrace(char) {
-		return openingBrace
+		return OpeningBrace
 	}
 	if isClosingBrace(char) {
-		return closingBrace
+		return ClosingBrace
 	}
 	if isSymbol(char) {
-		return symbols
+		return Symbols
 	}
-	return undefined
+	return Undefined
+}
+
+func isWhitespace(char rune) bool {
+	result, err := regexp.MatchString("\\s", string(char))
+	if err != nil {
+		log.Panic(err)
+	}
+	return result
 }
 
 func isDelimeter(char rune) bool {
-	result, err := regexp.MatchString("\\.|,|\\s|!", string(char))
+	result, err := regexp.MatchString("\\.|,|!|=|\\+|-|:|\\*|>|<", string(char))
 	if err != nil {
 		log.Panic(err)
 	}
@@ -59,7 +76,7 @@ func isDelimeter(char rune) bool {
 }
 
 func isSymbol(char rune) bool {
-	result, err := regexp.MatchString("[a-zA-Z][a-zA-Z0-9]*", string(char))
+	result, err := regexp.MatchString("[a-zA-Z/\\][a-zA-Z0-9\\/]*", string(char))
 	if err != nil {
 		log.Panic(err)
 	}
@@ -91,16 +108,16 @@ func isClosingBrace(char rune) bool {
 }
 
 func bracesHasSameType(left, right Token) bool {
-	if left.classes[0] != openingBrace {
+	if left.Classes[0] != OpeningBrace {
 		return false
 	}
-	if right.classes[0] != closingBrace {
+	if right.Classes[0] != ClosingBrace {
 		return false
 	}
 	switch {
-	case left.value[0] == '(' && right.value[0] == ')',
-		left.value[0] == '[' && right.value[0] == ']',
-		left.value[0] == '{' && right.value[0] == '}':
+	case left.Value[0] == '(' && right.Value[0] == ')',
+		left.Value[0] == '[' && right.Value[0] == ']',
+		left.Value[0] == '{' && right.Value[0] == '}':
 		return true
 	}
 	return false
