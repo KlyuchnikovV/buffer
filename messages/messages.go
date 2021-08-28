@@ -1,6 +1,10 @@
 package messages
 
-import "os"
+import (
+	"os"
+
+	"github.com/KlyuchnikovV/edigode-cli/types"
+)
 
 type RenderMessage interface {
 	GetSource() string
@@ -9,7 +13,7 @@ type RenderMessage interface {
 type RenderRequest struct {
 	Row    int
 	Column int
-	Runes  []rune
+	types.RenderItems
 	Source string
 }
 

@@ -7,3 +7,7 @@ require (
 	github.com/KlyuchnikovV/stack v0.0.0-20210427103552-f6f21f8b4227
 	github.com/stretchr/testify v1.7.0
 )
+
+replace (
+	github.com/KlyuchnikovV/edigode-cli => ../edigode-cli
+)
