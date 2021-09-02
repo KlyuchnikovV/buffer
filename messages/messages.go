@@ -14,6 +14,7 @@ type RenderRequest struct {
 	Row    int
 	Column int
 	types.RenderItems
+	Runes  []rune
 	Source string
 }
 
