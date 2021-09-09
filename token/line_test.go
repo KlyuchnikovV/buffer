@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/KlyuchnikovV/edigode-cli/constants"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -73,5 +74,57 @@ func main() {
 	for i, line := range text.Value {
 		fmt.Printf("%d - `%s`\n", i+1, line.debugString())
 	}
+	t.FailNow()
+}
+
+func TestInsertRune(t *testing.T) {
+	var input = `package main
+
+import (
+	"fmt"
+)
+
+type Editor struct {
+	field int
+}
+
+func init() {
+	// TODO: fallback if file not found etc
+	if b, err := editor.LoadFile(path); err != nil {
+		return nil, err
+	} else {
+		textareas = append(textareas, textarea.New(resizing.NewPercents(1), b))
+	}
+}
+
+// hello variable
+var hello = "Hello, world!"
+
+func main() {
+	fmt.Printf(hello)
+}
+
+`
+	text := NewText("", []rune(input))
+
+	// text.CursorDown()
+	// text.CursorDown()
+	// text.CursorDown()
+	// text.CursorDown()
+	// text.CursorDown()
+	// text.CursorLeft()
+
+	for i := 0; i < 2; i++ {
+		text.CursorRight()
+	}
+
+	text.NewLine()
+	text.ProcessRune(constants.BackspaceRune)
+	// text.DeleteRune()
+
+	for i, line := range text.Value {
+		fmt.Printf("%d - `%s`\n", i+1, line.debugString())
+	}
+
 	t.FailNow()
 }

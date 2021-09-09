@@ -17,7 +17,7 @@ func (token Token) Length() int {
 }
 
 func (token *Token) Insert(position int, runes ...rune) {
-	var temp = make([]rune, len(token.Value)+1)
+	var temp = make([]rune, len(token.Value))
 	copy(temp, token.Value)
 
 	token.Value = append(temp[:position], append(runes, temp[position:]...)...)
@@ -31,4 +31,10 @@ func (token *Token) Remove(position int) {
 	copy(temp, token.Value)
 
 	token.Value = append(temp[:position], temp[position+1:]...)
+}
+
+func (token Token) Split(position int) (Token, Token) {
+	var temp = make([]rune, len(token.Value))
+	copy(temp, token.Value)
+	return New(temp[:position], token.Classes...), New(temp[position:], token.Classes...)
 }

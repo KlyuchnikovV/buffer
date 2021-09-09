@@ -8,6 +8,4 @@ require (
 	github.com/stretchr/testify v1.7.0
 )
 
-replace (
-	github.com/KlyuchnikovV/edigode-cli => ../edigode-cli
-)
+replace github.com/KlyuchnikovV/edigode-cli => ../edigode-cli

@@ -18,6 +18,15 @@ func (c Classes) String() string {
 	return strings.Join(result, "|")
 }
 
+func (c Classes) Contains(class Class) bool {
+	for _, cl := range c {
+		if cl == class {
+			return true
+		}
+	}
+	return false
+}
+
 const (
 	Undefined    = "undefined"
 	Delimeter    = "delimeter"
