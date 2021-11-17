@@ -3,7 +3,7 @@ package buffer
 import (
 	"strings"
 
-	"github.com/KlyuchnikovV/	buffer/cursor"
+	"github.com/KlyuchnikovV/buffer/cursor"
 	"github.com/KlyuchnikovV/gapbuf"
 	"github.com/KlyuchnikovV/linetree"
 	"github.com/KlyuchnikovV/linetree/node"
