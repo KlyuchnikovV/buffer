@@ -13,43 +13,76 @@ type Buffer struct {
 	cursor.Cursors
 }
 
-func New(str string) *Buffer {
+func New(str ...byte) *Buffer {
 	var (
-		lines  = strings.Split(str, "\n")
+		lines  = strings.Split(string(str), "\n")
 		buffer = &Buffer{
-			Cursors: *cursor.New(linetree.New(nil), 0),
+			Cursors: *cursor.New(
+				linetree.New(
+					node.New(*gapbuf.New()),
+				),
+				1,
+			),
 		}
 	)
 
-	for _, line := range lines {
-		buffer.NewLine(line)
+	if len(str) == 0 {
+		return buffer
+	}
+
+	l, err := buffer.Tree.GetLine(1)
+	if err != nil {
+		panic(err)
+	}
+	l.Line.Insert([]byte(lines[0])...)
+
+	for i := 1; i < len(lines); i++ {
+		if err := buffer.Tree.Insert(i+1, *node.New(
+			*gapbuf.New([]byte(lines[i])...),
+		)); err != nil {
+			panic(err)
+		}
 	}
 
 	return buffer
 }
 
-func (buffer *Buffer) NewLine(str string) {
+func (buffer *Buffer) NewLine(bytes ...byte) {
 	buffer.ApplyToAll(func(gapBuffer *gapbuf.GapBuffer, lines *[]int, index int) {
 		(*lines)[index]++
 
-		buffer.Tree.Insert((*lines)[index],
+		if err := buffer.Tree.Insert((*lines)[index],
 			*node.New(
-				gapbuf.NewFromString(string(gapBuffer.Split()) + str),
+				*gapbuf.New(append(gapBuffer.Split(), bytes...)...),
 			),
-		)
+		); err != nil {
+			panic(err)
+		}
 	})
 }
 
-func (buffer *Buffer) Insert(str string) {
+func (buffer *Buffer) SetCursor(line, offset int) {
+	if line != -1 {
+		buffer.Cursors.Lines[0] = line
+	}
+
+	if offset != -1 {
+		buffer.ApplyToAll(func(gapBuffer *gapbuf.GapBuffer, lines *[]int, index int) {
+			gapBuffer.SetCursor(offset)
+		})
+	}
+}
+
+func (buffer *Buffer) Insert(bytes ...byte) {
 	buffer.ApplyToAll(func(gapBuffer *gapbuf.GapBuffer, _ *[]int, _ int) {
-		gapBuffer.Insert([]byte(str)...)
+		gapBuffer.Insert(bytes...)
 	})
 }
 
 func (buffer *Buffer) Delete() {
 	buffer.ApplyToAll(func(gapBuffer *gapbuf.GapBuffer, lines *[]int, index int) {
-		if gapBuffer.GetCursor() != 0 {
-			gapBuffer.Delete(1)
+		if gapBuffer.Offset() != 0 {
+			gapBuffer.Delete()
 			return
 		}
 		if (*lines)[index] == 0 {
@@ -62,18 +95,29 @@ func (buffer *Buffer) Delete() {
 		}
 		(*lines)[index]--
 
-		line, err := buffer.Tree.GetLine((*lines)[index])
+		node, err := buffer.Tree.GetLine((*lines)[index])
 		if err != nil {
 			panic(err)
 		}
 
-		gapBuf, ok := line.Line.(*gapbuf.GapBuffer)
-		if !ok {
-			panic("!ok")
-		}
+		gapBuffer = &node.Line
 
-		gapBuf.MoveGap(gapBuf.Size() - 1)
+		gapBuffer.Gap.SetCursor(gapBuffer.Size())
 
-		gapBuf.Insert([]byte(oldLine.String())...)
+		gapBuffer.Insert([]byte(oldLine.String())...)
 	})
+}
+
+func (buffer *Buffer) TranslateOffset(offset int) (int, int) {
+	var (
+		data      = buffer.Tree.String()[:offset]
+		line      = strings.Count(data, "\n") + 1
+		lastIndex = strings.LastIndex(data, "\n")
+	)
+
+	if lastIndex == -1 {
+		return line, offset
+	}
+
+	return line, len(data[lastIndex+1:])
 }

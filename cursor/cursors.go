@@ -6,13 +6,13 @@ import (
 )
 
 type Cursors struct {
-	lines []int
+	Lines []int
 	Tree  linetree.LineTree
 }
 
 func New(tree *linetree.LineTree, lines ...int) *Cursors {
 	return &Cursors{
-		lines: lines,
+		Lines: lines,
 		Tree:  *tree,
 	}
 }
@@ -30,17 +30,12 @@ func (cursors *Cursors) RemoveCursor(index int) {
 }
 
 func (cursors *Cursors) ApplyToAll(f func(gapBuffer *gapbuf.GapBuffer, lines *[]int, index int)) {
-	for i, line := range cursors.lines {
+	for i, line := range cursors.Lines {
 		line, err := cursors.Tree.GetLine(line)
 		if err != nil {
 			panic(err)
 		}
 
-		gapBuf, ok := line.Line.(*gapbuf.GapBuffer)
-		if !ok {
-			panic("!ok")
-		}
-
-		f(gapBuf, &cursors.lines, i)
+		f(&line.Line, &cursors.Lines, i)
 	}
 }
