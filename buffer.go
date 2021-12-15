@@ -10,7 +10,6 @@ import (
 	"github.com/KlyuchnikovV/gapbuf"
 	"github.com/KlyuchnikovV/linetree"
 	"github.com/KlyuchnikovV/linetree/node"
-	"github.com/wailsapp/wails"
 )
 
 type Buffer struct {
