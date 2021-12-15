@@ -1,6 +1,7 @@
 package buffer
 
 import (
+	ctx "context"
 	"log"
 	"strings"
 
@@ -21,7 +22,7 @@ type Buffer struct {
 	cursor.Cursors
 }
 
-func New(ctx context.Context, str ...byte) *Buffer {
+func New(ctx ctx.Context, str ...byte) *Buffer {
 	var (
 		lines  = strings.Split(string(str), "\n")
 		buffer = &Buffer{
