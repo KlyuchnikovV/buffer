@@ -1,11 +1,11 @@
 package buffer
 
 import (
-	"context"
 	"log"
 	"strings"
 
 	"github.com/KlyuchnikovV/buffer/cursor"
+	"github.com/KlyuchnikovV/edigode/core/context"
 	"github.com/KlyuchnikovV/edigode/types"
 	"github.com/KlyuchnikovV/gapbuf"
 	"github.com/KlyuchnikovV/linetree"
@@ -14,8 +14,7 @@ import (
 )
 
 type Buffer struct {
-	types.CancellableContext
-	runtime *wails.Runtime
+	context.Context
 
 	keyboardEvents chan types.KeyboardEvent
 	selectEvents   chan types.SelectEvent
@@ -27,7 +26,7 @@ func New(ctx context.Context, str ...byte) *Buffer {
 	var (
 		lines  = strings.Split(string(str), "\n")
 		buffer = &Buffer{
-			CancellableContext: *types.NewCancellableContext(ctx),
+			Context: *context.New(ctx),
 
 			keyboardEvents: make(chan types.KeyboardEvent, 100), //TODO: length of keyboard chan
 			selectEvents:   make(chan types.SelectEvent, 100),
@@ -62,14 +61,8 @@ func New(ctx context.Context, str ...byte) *Buffer {
 	return buffer
 }
 
-func (buffer *Buffer) WailsInit(runtime *wails.Runtime) error {
-	buffer.runtime = runtime
-
-	return nil
-}
-
 func (buffer *Buffer) Start() error {
-	if err := buffer.CancellableContext.Start(); err != nil {
+	if err := buffer.Context.Start(); err != nil {
 		return err
 	}
 
@@ -103,8 +96,8 @@ func (buffer *Buffer) listenEvents() {
 			if err := buffer.HandleSelect(event); err != nil {
 				panic(err)
 			}
-		case <-buffer.CancellableContext.Done():
-			if err := buffer.CancellableContext.Cancel(); err != nil {
+		case <-buffer.Done():
+			if err := buffer.Cancel(); err != nil {
 				panic(err) //TODO: errors channel
 			}
 		}
@@ -126,20 +119,17 @@ func (buffer *Buffer) HandleKeyboardEvent(event types.KeyboardEvent) error {
 		buffer.Insert([]byte(event.Key)...)
 	}
 
-	buffer.runtime.Events.Emit("buffer_changed" + event.Buffer)
+	buffer.Emit("buffer", "changed", event.Buffer)
 
 	return nil
 }
 
 func (buffer *Buffer) HandleSelect(event types.SelectEvent) error {
-	log.Printf("SELECT: %s", event)
-
 	var line, offset = buffer.translateOffset(event.Symbol)
-	log.Printf("SELECT: line %d, offset %d (symbol %d)", line, offset, event.Symbol)
 
 	buffer.SetCursor(line, offset)
 
-	buffer.runtime.Events.Emit("cursor_changed", event.Buffer)
+	buffer.Emit("cursor", "changed", event.Buffer)
 
 	return nil
 }
@@ -230,7 +220,6 @@ func (buffer *Buffer) GetLines() ([]string, error) {
 	var result = make([]string, len(nodes))
 	for i, node := range nodes {
 		result[i] = node.Line.String()
-		result[i] = strings.ReplaceAll(result[i], " ", "\u00A0")
 	}
 	return result, nil
 }
