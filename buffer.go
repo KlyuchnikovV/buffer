@@ -16,17 +16,19 @@ import (
 type Buffer struct {
 	context.Context
 
+	name string
+
 	keyboardEvents chan types.KeyboardEvent
 	selectEvents   chan types.SelectEvent
 
 	cursor.Cursors
 }
 
-func New(ctx ctx.Context, str ...byte) *Buffer {
+func New(ctx ctx.Context, name string, str ...byte) *Buffer {
 	var (
 		lines  = strings.Split(string(str), "\n")
 		buffer = &Buffer{
-			Context: *context.New(ctx),
+			name: name,
 
 			keyboardEvents: make(chan types.KeyboardEvent, 100), //TODO: length of keyboard chan
 			selectEvents:   make(chan types.SelectEvent, 100),
@@ -39,6 +41,8 @@ func New(ctx ctx.Context, str ...byte) *Buffer {
 			),
 		}
 	)
+
+	buffer.Context = *context.New(ctx, buffer.Init)
 
 	if len(str) == 0 {
 		return buffer
@@ -69,6 +73,10 @@ func (buffer *Buffer) Start() error {
 	go buffer.listenEvents()
 
 	return nil
+}
+
+func (buffer *Buffer) Init() {
+	buffer.Emit("buffer", "init", buffer.name)
 }
 
 func (buffer *Buffer) KeyboardEvents() chan types.KeyboardEvent {
