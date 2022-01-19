@@ -133,9 +133,10 @@ func (buffer *Buffer) HandleKeyboardEvent(event types.KeyboardEvent) error {
 }
 
 func (buffer *Buffer) HandleSelect(event types.SelectEvent) error {
-	var line, offset = buffer.translateOffset(event.Symbol)
-
-	buffer.SetCursor(line, offset)
+	if event.Symbol != nil {
+		var line, offset = buffer.translateOffset(*event.Symbol)
+		buffer.SetCursor(line, offset)
+	}
 
 	buffer.Emit("cursor", "changed", event.Buffer)
 
