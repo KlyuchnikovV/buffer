@@ -5,8 +5,8 @@ import (
 	"log"
 	"strings"
 
-	"github.com/KlyuchnikovV/edigode/core/context"
-	"github.com/KlyuchnikovV/edigode/types"
+	"github.com/KlyuchnikovV/edicode/core/context"
+	"github.com/KlyuchnikovV/edicode/types"
 	"github.com/KlyuchnikovV/gapbuf"
 	"github.com/KlyuchnikovV/linetree"
 	"github.com/KlyuchnikovV/linetree/node"
